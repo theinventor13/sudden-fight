@@ -1,3 +1,28 @@
+collision = {}
+function collision.AABB(r1x, r1y, r1w, r1h, r2x, r2y, r2w, r2h)
+	return r1x + r1w >= r2x and r1x < r2x + r2w and r1y + r1h >= r2y and r1y < r2y + r2h 
+end
+
+function collision.LL(line1, line2)
+	if line1.p1x < line1.p2x then
+		m1 = (line1.p2y - line1.p1y) / (line1.p2x - line1.p1x)
+	else
+		m1 = (line1.p1y - line1.p2y) / (line1.p1x - line1.p2x)
+	end
+	if line2.p1x < line2.p2x then
+		m2 = (line2.p2y - line2.p1y) / (line2.p2x - line2.p1x)
+	else
+		m2 = (line2.p1y - line2.p2y) / (line2.p1x - line2.p2x) 
+	end
+	b1 = -m1 * line1.p1x + line1.p1y
+	b2 = -m2 * line2.p1x + line2.p1y
+	if (line1.p1y > m2 * line1.p1x + b2) == (line1.p2y > m2 * line1.p2x + b2) then
+		return false
+	end
+	if (line2.p1y > m1 * line2.p1x + b1) == (line2.p2y > m1 * line2.p2x + b1) then
+		return false
+	end
+end
 
 vector = {}
 function vector.normalize(vec)
@@ -50,7 +75,7 @@ function initgame(sw, sh)
 	game.quit = false
 	game.fps = "0"
 	game.fpstimer = 0
-	game.fpsinterval = .2
+	game.fpsinterval = 1/5
 	game.mv = {}
 	game.mv.x = 0
 	game.mv.y = 0
@@ -100,8 +125,10 @@ function initplayer()
 	player.speed.dash = 10
 	player.v = {}
 	player.v = vector.create(player.speed.float, player.speed.float)
-	player.sprite = love.graphics.newImage("playersprite.png")
-	player.w, player.h= player.sprite:getDimensions()
+	player.sprite = love.graphics.newImage("sprites/spirit of vengeance/test.png")
+	player.w, player.h = player.sprite:getDimensions()
+	player.wd2 = player.w / 2
+	player.hd2 = player.h / 2
 	player.timetoshoot = 0
 	player.aimfudge = .05
 	return player
@@ -111,7 +138,6 @@ function initbullet()
 	local bullet = {}
 	bullet.list = {}
 	bullet.sprite = love.graphics.newImage("fireball.png")
-	bullet.count = 0
 	bullet.speed = 16
 	return bullet
 end
@@ -125,11 +151,10 @@ function initcursor()
 end 
 
 function addbullet(state, x, y, ang)
-	state.bullet.list[state.bullet.count] = {}
-	state.bullet.list[state.bullet.count] = vector.create(x, y)
-	state.bullet.list[state.bullet.count].v = {}
-	state.bullet.list[state.bullet.count].v = vector.create(math.cos(ang) * state.bullet.speed * state.map.ts, math.sin(ang) * state.bullet.speed * state.map.ts)
-	state.bullet.count = state.bullet.count + 1
+	state.bullet.list[#state.bullet.list+1] = {}
+	state.bullet.list[#state.bullet.list] = vector.create(x, y)
+	state.bullet.list[#state.bullet.list].v = {}
+	state.bullet.list[#state.bullet.list].v = vector.create(math.cos(ang) * state.bullet.speed * state.map.ts, math.sin(ang) * state.bullet.speed * state.map.ts)
 end
 
 function updateplayer(state, dt)
@@ -168,29 +193,33 @@ function updateplayer(state, dt)
 		local ang = math.atan2(state.cursor.y - state.player.y, state.cursor.x - state.player.x)
 		ang = ang + (state.player.aimfudge * math.pi) * (math.random() - .5)
 		addbullet(state, state.player.x, state.player.y, ang)
-		state.player.timetoshoot = .01
+		state.player.timetoshoot = .006
 	end
 	
 end
 
 function drawplayer(state)
-	love.graphics.draw(state.player.sprite, math.floor(state.player.x + .5), math.floor(state.player.y + .5))
+	love.graphics.draw(state.player.sprite, math.floor(state.player.x + .5), math.floor(state.player.y + .5), 0, 1, 1, state.player.wd2, state.player.hd2)
 end
 
 function updatebullet(state, dt)
-	if state.bullet.count then 
-		for i = 0, state.bullet.count-1, 1 do
-			state.bullet.list[i].x = state.bullet.list[i].x + state.bullet.list[i].v.x * dt
-			state.bullet.list[i].y = state.bullet.list[i].y + state.bullet.list[i].v.y * dt
+	local i
+	for i = #state.bullet.list, 1, -1 do
+		vector.translate(state.bullet.list[i], 
+						 state.bullet.list[i].v.x * dt,
+						 state.bullet.list[i].v.y * dt)
+		if collision.AABB(state.bullet.list[i].x, state.bullet.list[i].y, 0, 0, 0, 0, state.map.w, state.map.h) == false then
+			table.remove(state.bullet.list, i)
+			if #state.bullet.list == 0 then
+				break
+			end
 		end
 	end
 end
 
 function drawbullet(state)
-	if state.bullet.count then
-		for i = 0, state.bullet.count-1, 1 do
-			love.graphics.draw(state.bullet.sprite, state.bullet.list[i].x, state.bullet.list[i].y)
-		end
+	for i = 1, #state.bullet.list do
+		love.graphics.draw(state.bullet.sprite, state.bullet.list[i].x, state.bullet.list[i].y)
 	end
 end
 
@@ -220,7 +249,7 @@ function drawcursor(state)
 	love.graphics.draw(state.cursor.sprite, math.floor(state.cursor.x + .5), math.floor(state.cursor.y + .5))
 end
 
-function debuginfo()
+function debuginfo(state)
 	love.graphics.print("SUDDEN FIGHT V0.0", 20, 20)
 	game.fpstimer = game.fpstimer + love.timer.getDelta()
 	if game.fpstimer >= game.fpsinterval then 
@@ -228,6 +257,7 @@ function debuginfo()
 		game.fps = tostring(math.floor(1 / love.timer.getDelta()))
 	end
 	love.graphics.print("FPS: "..game.fps, 20, 40)
+	love.graphics.print("Bullets: "..tostring(#state.bullet.list), 20, 60)
 end
 
 function adjustview(state)
@@ -256,13 +286,13 @@ function gamestate.update(dt)
 	elseif love.keyboard.isScancodeDown("escape") == false then
 		gamestate.state.debounce = true
 	end
-	updateplayer(gamestate.state, dt)
 	updatebullet(gamestate.state, dt)
+	updateplayer(gamestate.state, dt)
 	updatecursor(gamestate.state, dt)
 end 
 
 function gamestate.draw()
-	debuginfo()
+	debuginfo(gamestate.state)
 	adjustview(gamestate.state)
 	drawmap(gamestate.state)
 	drawcursor(gamestate.state)
