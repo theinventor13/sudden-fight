@@ -76,14 +76,18 @@ function initgame(sw, sh)
 	game.fps = "0"
 	game.fpstimer = 0
 	game.fpsinterval = 1/5
-	game.mv = {}
-	game.mv.x = 0
-	game.mv.y = 0
+	game.timer = 0
+	game.tick = false
+	game.mouse = {}
+	game.mouse.v = {}
+	game.mouse.v.x = 0
+	game.mouse.v.y = 0
+	game.mouse.sens = 1
 	love.mouse.setVisible(false)
 	love.mouse.setGrabbed(true)
 	love.mouse.setRelativeMode(true)
 	--read this and other config shit from file
-	game.fullscreen = false 
+	game.fullscreen = false
 	game.vsync = false
 	love.window.setMode(game.sw, game.sh, {centered = true, vsync = game.vsync, fullscreen = game.fullscreen})
 end
@@ -107,7 +111,11 @@ function initmap()
 	for my = 0, map.gh - 1 do
 		map.grid[my] = {}
 		for mx = 0, map.gw - 1 do
-			map.grid[my][mx] = love.math.random(2)
+			if love.math.random(100) > 80 then
+				map.grid[my][mx] = 1
+			else
+				map.grid[my][mx] = 2
+			end
 			map.batch:add(quad[(map.grid[my][mx])], mx * 16, my * 16)
 		end
 	end
@@ -115,30 +123,60 @@ function initmap()
 	
 	return map
 end
-
+--create local functions for all this shit
 function initplayer()
 	local player = {}
 	player.x = 16 * 16
 	player.y = 16 * 16
 	player.speed = {}
-	player.speed.float = 6
-	player.speed.dash = 10
+	player.speed.float = 8
+	player.speed.dash = 12
 	player.v = {}
 	player.v = vector.create(player.speed.float, player.speed.float)
-	player.sprite = love.graphics.newImage("sprites/spirit of vengeance/test.png")
-	player.w, player.h = player.sprite:getDimensions()
+	player.sprite = {}
+	player.sprite.dir = 0
+	player.sprite.current = "run"
+	player.sprite.frame = 0
+	player.sprite.timer = 0
+	player.sprite.delay = .2
+	player.sprite.anim = {}
+	--player.sprite.anim["idle"].image = love.graphics.newImage("sprites/spirit of vengeance/idle.png")
+	--player.sprite.anim["idle"].frames = 4
+	player.sprite.anim["run"] = {}
+	player.sprite.anim["run"].image = love.graphics.newImage("sprites/spirit of vengeance/run.png")
+	player.sprite.anim["run"].frames = 4
+	player.sprite.anim["run"].w = player.sprite.anim["run"].image:getWidth() / (player.sprite.anim["run"].frames * 8)
+	player.sprite.anim["run"].h = player.sprite.anim["run"].image:getHeight()
+	player.sprite.anim["run"].quad = {}
+	for i = 0,  player.sprite.anim["run"].frames * 8 do
+		player.sprite.anim["run"].quad[i] = 
+		love.graphics.newQuad(i * player.sprite.anim["run"].w , 0, 
+			player.sprite.anim["run"].w,
+			player.sprite.anim["run"].image:getHeight(),
+			player.sprite.anim["run"].image:getDimensions())
+	end
+	player.w = player.sprite.anim[player.sprite.current].w
+	player.h = player.sprite.anim[player.sprite.current].h
 	player.wd2 = player.w / 2
 	player.hd2 = player.h / 2
+	player.moving = false
+	player.angle = {}
+	player.angle.aim = 0
+	player.angle.move = 0
 	player.timetoshoot = 0
 	player.aimfudge = .05
+	player.particle = {}
+	
+	--implement rotating fireballs
 	return player
 end
 
 function initbullet()
 	local bullet = {}
 	bullet.list = {}
-	bullet.sprite = love.graphics.newImage("fireball.png")
+	bullet.sprite = love.graphics.newImage("sprites/spirit of vengeance/bullet.png")
 	bullet.speed = 16
+	bullet.friction = .8
 	return bullet
 end
 
@@ -165,41 +203,68 @@ function updateplayer(state, dt)
 	dir.x = (love.keyboard.isDown('a') and -1 or 0) + (love.keyboard.isDown('d') and 1 or 0)
 	dir.y = (love.keyboard.isDown('w') and -1 or 0) + (love.keyboard.isDown('s') and 1 or 0)
 	
-	vector.normalize(dir)
-	vector.scale(dir, joymag)
+	if dir.x == 0 and dir.y == 0 then
+		state.player.moving = false
+	else
+		state.player.moving = true
+		vector.normalize(dir)
+		vector.scale(dir, joymag)
+		state.player.angle.move = math.atan2(dir.y, dir.x)
+		
+		if state.player.angle.move < 0 then
+			state.player.angle.move = state.player.angle.move + 2 * math.pi
+		end
+		state.player.angle.move  = state.player.angle.move % (2 * math.pi)
+		state.player.sprite.dir = (((7 - math.floor((state.player.angle.move / (2 * math.pi)) * 8)) + 3) % 8) * 
+											  state.player.sprite.anim[state.player.sprite.current].frames
+		state.player.sprite.timer = state.player.sprite.timer + dt
+		if state.player.sprite.timer >= state.player.sprite.delay then
+			state.player.sprite.frame = (state.player.sprite.frame + 1) % 4
+			state.player.sprite.timer = 0
+		end
+		state.player.v = vector.create(love.keyboard.isDown("lshift") and state.player.speed.dash or state.player.speed.float,
+									   love.keyboard.isDown("lshift") and state.player.speed.dash or state.player.speed.float)
+		
+		local dx = state.player.v.x * dir.x * state.map.ts * dt
+		local dy = state.player.v.x * dir.y * state.map.ts * dt
+		vector.translate(state.player, dx, dy)
+		
+		if state.player.x < state.player.wd2 then
+			state.player.x = state.player.wd2
+		end
+		if state.player.y < 0 then
+			state.player.y = 0
+		end
+		if state.player.x > state.map.w - state.player.wd2 then
+			state.player.x = state.map.w - state.player.wd2
+		end
+		if state.player.y > state.map.h then
+			state.player.y = state.map.h 
+		end
+	end
 	
-	state.player.v = vector.create(love.keyboard.isDown("lshift") and state.player.speed.dash or state.player.speed.float, love.keyboard.isDown("lshift") and state.player.speed.dash or state.player.speed.float)
+	--implement wall collision
 	
-	vector.translate(state.player, (state.player.v.x * dir.x * state.map.ts * dt), (state.player.v.x * dir.y * state.map.ts * dt))
-	
-	if state.player.x < 0 then
-		state.player.x = 0
-	end
-	if state.player.y < 0 then
-		state.player.y = 0
-	end
-	if state.player.x > state.map.w - state.player.w then
-		state.player.x = state.map.w - state.player.w
-	end
-	if state.player.y > state.map.h - state.player.h then
-		state.player.y = state.map.h - state.player.h
-	end
 	if state.player.timetoshoot >= 0 then
 		state.player.timetoshoot = state.player.timetoshoot - dt
 	end
 	
 	if love.mouse.isDown(1) and state.player.timetoshoot <= 0 then
-		
 		local ang = math.atan2(state.cursor.y - state.player.y, state.cursor.x - state.player.x)
 		ang = ang + (state.player.aimfudge * math.pi) * (math.random() - .5)
-		addbullet(state, state.player.x, state.player.y, ang)
-		state.player.timetoshoot = .006
+		addbullet(state, state.player.x, state.player.y - 16, ang)
+		state.player.timetoshoot = .01
 	end
 	
 end
 
 function drawplayer(state)
-	love.graphics.draw(state.player.sprite, math.floor(state.player.x + .5), math.floor(state.player.y + .5), 0, 1, 1, state.player.wd2, state.player.hd2)
+	love.graphics.draw(state.player.sprite.anim[state.player.sprite.current].image,
+						state.player.sprite.anim[state.player.sprite.current]
+						.quad[state.player.sprite.dir + state.player.sprite.frame],
+						math.floor(state.player.x + .5), 
+						math.floor(state.player.y + .5), 
+						0, 1, 1, state.player.wd2, state.player.h)
 end
 
 function updatebullet(state, dt)
@@ -232,7 +297,7 @@ function drawmap(state)
 end
 
 function updatecursor(state)
-	vector.translate(state.cursor, game.mv.x, game.mv.y)
+	vector.translate(state.cursor, game.mouse.v.x * game.mouse.sens, game.mouse.v.y * game.mouse.sens)
 	if state.cursor.x < state.player.x - game.swd2 then
 		state.cursor.x = state.player.x - game.swd2 
 	elseif state.cursor.x > state.player.x + game.swd2 - state.cursor.w then
@@ -250,7 +315,7 @@ function drawcursor(state)
 end
 
 function debuginfo(state)
-	love.graphics.print("SUDDEN FIGHT V0.0", 20, 20)
+	love.graphics.print("SUDDEN FIGHT V0.1", 20, 20)
 	game.fpstimer = game.fpstimer + love.timer.getDelta()
 	if game.fpstimer >= game.fpsinterval then 
 		game.fpstimer = 0
@@ -265,7 +330,14 @@ function adjustview(state)
 end
 
 function game.update()
-	game.mv = vector.create(0,0)
+	game.mouse.v = vector.create(0,0)
+	game.timer = game.timer + love.timer.getDelta()
+	if game.timer >= 1 then
+		game.timer = 0
+		game.tick = true
+	else 
+		game.tick = false
+	end
 end
  
 gamestate = {}
@@ -323,7 +395,7 @@ end
 
 --fix cursor problem
 function love.load()
-	initgame(800, 600)
+	initgame(800, 800)
 	gamestate.load()
 	pausestate.load()
 	statelist = {}
@@ -346,7 +418,7 @@ function love.quit()
 end
 
 function love.mousemoved(x, y, dx, dy)
-	game.mv = vector.create(dx, dy)
+	game.mouse.v = vector.create(dx, dy)
 end
 
 function love.run()
