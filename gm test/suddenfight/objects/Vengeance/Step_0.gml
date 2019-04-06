@@ -1,61 +1,98 @@
-dirx = 0.0;
-diry = 0.0;
+dx = 0.0;
+dy = 0.0;
+moved = false;
 
 if(keyboard_check(ord("D"))){
-	dirx = 1;
+	dx = 1;
+	moved = true;
 }
 
 if(keyboard_check(ord("A"))){
-	dirx = -1;
+	dx = -1;
+	moved = true;
 }
 
 if(keyboard_check(ord("S"))){
-	diry = 1;
+	dy = 1;
+	moved = true;
 }
 
 if(keyboard_check(ord("W"))){
-	diry = -1;
+	dy = -1;
+	moved = true;
 }
-//change this to work with angle
-if(dirx == 0 && diry == 1){
-	//down
-	sprite_index = vengeance_run_down;
-}
-if(dirx == 1 && diry == 1){
-	//down right
-	sprite_index = vengeance_run_down_right;
-}
-if(dirx == 1 && diry == 0){
-	//right
-	sprite_index = vengeance_run_right;
-}
-if(dirx == 1 && diry == -1){
-	//up right
-	sprite_index = vengeance_run_up_right;
-}
-if(dirx == 0 && diry == -1){
-	//up 
-	sprite_index = vengeance_run_up;
-}
-if(dirx == -1 && diry == -1){
-	//up left
-	sprite_index = vengeance_run_up_left;
-}
-if(dirx == -1 && diry == 0){
-	//left
-	sprite_index = vengeance_run_left;
-}
-if(dirx == -1 && diry == 1){
-	//down left
-	sprite_index = vengeance_run_down_left;
+//add joystick input
+if(moved){
+	
+	direction = arctan2(dy, dx); //calculate player direction
+	if(direction < 0){
+		direction += 2 * pi; //adjust for atan2 faggotry
+	}
+	direction = radtodeg(pit2 - direction); //set builtin
+	
+	if(keyboard_check(vk_lshift)){
+		speed = p_dash_speed;
+		image_speed = p_dash_speed;
+	}else{
+		speed = p_run_speed;
+		image_speed = p_run_speed;
+	}
+	//calculate animation direction
+	if(direction < (270 + dd16) && direction >= (180 + dd16)){
+		//down
+		s_dir = 0;
+	}
+	
+	if(direction < (360 - dd16) && direction >= (270 + dd16)){
+		//down right
+		s_dir = 1;
+	}
+	
+	if((direction < dd16 && direction >= 0) || (direction > (360 - dd16))){
+		//right
+		s_dir = 2;
+	}
+	
+	if(direction < (45 + dd16) && direction >= dd16){
+		//up right
+		s_dir = 3;
+	}
+	
+	if(direction < (90 + dd16) && direction >= (45 + dd16)){
+		//up 
+		s_dir = 4;
+	}
+	
+	if(direction < (135 + dd16) && direction >= (90 + dd16)){
+		//up left
+		s_dir = 5;
+	}
+	
+	if(direction < (180 + dd16) && direction >= (135 + dd16)){
+		//left
+		s_dir = 6;
+	}
+	
+	if(direction < (270 - dd16) && direction >= (180 + dd16)){
+		//down left
+		s_dir = 7;
+	}
+	
+}else{
+	image_speed = p_idle_speed;
+	speed = 0;
 }
 
-var tm = dirx * dirx + diry * diry;
-tm = sqrt(tm);
-dirx = (dirx / tm) * run_speed;
-diry = (diry / tm) * run_speed;
-x += dirx;
-y += diry;
-show_debug_message("hello: ")
+if(moved){
+	sprite_index = s_run[s_dir];
+}else{
+	sprite_index = s_idle[s_dir];
+}
+
+if(b_timer > 0){
+	b_timer -= delta_time;	
+}
+
+
 
 
