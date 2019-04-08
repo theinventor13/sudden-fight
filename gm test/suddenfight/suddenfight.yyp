@@ -103,6 +103,14 @@
             }
         },
         {
+            "Key": "294b8b88-59d3-4864-befc-17ff5fb3186b",
+            "Value": {
+                "id": "cc632c5f-8719-4606-a773-4929eef3e837",
+                "resourcePath": "objects\\francis\\francis.yy",
+                "resourceType": "GMObject"
+            }
+        },
+        {
             "Key": "2f303ea8-49fc-4a00-b111-f179edbdfd40",
             "Value": {
                 "id": "399e6894-198f-43d6-8bb5-02ff45b69456",
@@ -124,6 +132,14 @@
                 "id": "0c96e862-ecda-410f-903f-4937216ba5d1",
                 "resourcePath": "views\\319017bd-36f1-492d-9337-3caace6c8a64.yy",
                 "resourceType": "GMFolder"
+            }
+        },
+        {
+            "Key": "32699977-583e-4b7b-be77-2f6eb33c96e1",
+            "Value": {
+                "id": "c3146217-5d3d-452c-856f-3981939da8cc",
+                "resourcePath": "tilesets\\collision_tiles\\collision_tiles.yy",
+                "resourceType": "GMTileSet"
             }
         },
         {
@@ -151,6 +167,14 @@
             }
         },
         {
+            "Key": "3e0f22c2-e9fd-47ea-81e3-9b8cb672d03c",
+            "Value": {
+                "id": "b1ee4c74-af78-44b1-8024-0e1a459a6326",
+                "resourcePath": "tilesets\\rubble_tiles\\rubble_tiles.yy",
+                "resourceType": "GMTileSet"
+            }
+        },
+        {
             "Key": "450bf1dd-89b4-467d-9be5-9ab051d52edf",
             "Value": {
                 "id": "25a7784d-12c2-4f0d-9c00-c67cf9f78f0d",
@@ -175,6 +199,14 @@
             }
         },
         {
+            "Key": "51393061-683b-43aa-9dfb-429abe558255",
+            "Value": {
+                "id": "1214d7ab-88ec-471a-9b94-32ae3767594c",
+                "resourcePath": "sprites\\rubble\\rubble.yy",
+                "resourceType": "GMSprite"
+            }
+        },
+        {
             "Key": "524a1c15-0b7f-440c-912f-66ac7291e36e",
             "Value": {
                 "id": "a43d613d-0ee2-4ec3-a337-a7227d692a9b",
@@ -195,6 +227,14 @@
             "Value": {
                 "id": "053962d5-0312-4d86-8332-a5ed9cd147bc",
                 "resourcePath": "sprites\\vengeance_run_up\\vengeance_run_up.yy",
+                "resourceType": "GMSprite"
+            }
+        },
+        {
+            "Key": "65b52a2d-58df-44fa-8c9f-b098debee867",
+            "Value": {
+                "id": "2ac70e06-1a59-45ea-b805-bafcc0ff3a6a",
+                "resourcePath": "sprites\\collision\\collision.yy",
                 "resourceType": "GMSprite"
             }
         },
@@ -439,6 +479,14 @@
             }
         },
         {
+            "Key": "dd7923de-d6f4-4c89-ab9d-eff4ebaae88f",
+            "Value": {
+                "id": "be83925d-fbe3-43d1-b423-e1a99208c155",
+                "resourcePath": "sprites\\francis_sprite\\francis_sprite.yy",
+                "resourceType": "GMSprite"
+            }
+        },
+        {
             "Key": "e0afb488-1db7-42e6-a87a-d3b9e852b86a",
             "Value": {
                 "id": "d4c16818-eaa1-4eb1-bdfa-73cfacb63773",
@@ -492,6 +540,14 @@
                 "id": "842fbcef-9e1a-4aaf-bad3-cb1560e37773",
                 "resourcePath": "options\\mac\\options_mac.yy",
                 "resourceType": "GMMacOptions"
+            }
+        },
+        {
+            "Key": "f6155f7a-35ad-4046-aacc-042475be9d5b",
+            "Value": {
+                "id": "422bc971-8301-4671-91d0-c5af74c8e79b",
+                "resourcePath": "views\\f6155f7a-35ad-4046-aacc-042475be9d5b.yy",
+                "resourceType": "GMFolder"
             }
         },
         {

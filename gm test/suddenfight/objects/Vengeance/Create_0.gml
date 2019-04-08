@@ -5,7 +5,8 @@ p_cursor = instance_create_depth(x, y, -1000, cursor);
 p_idle_speed = .4;
 p_run_speed = 1;
 p_dash_speed = 1.5;
-t_map = layer_tilemap_get_id("collision");
+l_id = layer_get_id("collision_map");
+t_map = layer_tilemap_get_id(l_id);
 //SPRITE STUFF
 //used for sprite direction calculation
 dd16 = 360 / 16;

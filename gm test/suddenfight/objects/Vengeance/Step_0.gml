@@ -93,6 +93,10 @@ if(b_timer > 0){
 	b_timer -= delta_time;	
 }
 
+oldx = x;
+oldy = y;
+
+
 
 
 
